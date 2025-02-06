@@ -1,0 +1,28 @@
+FAISS_INDEX_PATH = "faiss_index"
+
+if os.path.exists(FAISS_INDEX_PATH):
+    print("✅ Loading existing FAISS index...")
+    vector_store = FAISS.load_local(
+        FAISS_INDEX_PATH,
+        HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2"),
+        allow_dangerous_deserialization=True  # ✅ Required for safe local deserialization
+    )
+else:
+    print("⚡ No existing FAISS index found. Creating a new one...")
+
+    # Load and process data
+    url = "https://brainlox.com/courses/category/technical"
+    loader = WebBaseLoader(url)
+    documents = loader.load()
+
+    # Split text into chunks
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    docs = text_splitter.split_documents(documents)
+
+    # Create and store embeddings
+    embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vector_store = FAISS.from_documents(docs, embedding_model)
+
+    # Save FAISS index
+    vector_store.save_local(FAISS_INDEX_PATH)
+    print("✅ FAISS index created and saved.")
